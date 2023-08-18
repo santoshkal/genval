@@ -1,0 +1,10 @@
+dockerfile:
+  # from: cgr.dev/chainguard/go:latest
+  from: golang:latest
+  workdir: /app
+  copy:
+    - . /app
+  run:
+    - go build -o myapp
+  entrypoint:
+    - ./myapp
