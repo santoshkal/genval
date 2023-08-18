@@ -2,8 +2,8 @@
 
 # evaluate_package imports and evaluates all rules within the package
 evaluate_package {
-     untrusted_base_image
-     latest_base_image
+   not untrusted_base_image
+    not latest_base_image
     # deny_secrets
 }
 
@@ -11,7 +11,7 @@ evaluate_package {
 untrusted_base_image {
     input[i].Cmd == "from"
     val := split(input[i].Value, "/")
-    val[0] == "c"  
+    val[0] == "cgr.dev/chainguard/"  
 }
 
 
@@ -29,4 +29,14 @@ latest_base_image {
 #     input[i].Cmd == "env"
 #     val := input[i].Value
 #     contains(lower(val[_]), secrets_env[_])
+# }
+
+# multi_stage := true {
+#     input[_].Cmd == "copy"
+#     val := concat(" ", input[_].Flags)
+#     contains(lower(val), "--from=")
+# }
+# deny[msg] {
+#     multi_stage == false
+#     msg := sprintf("Not a multi-stage Dockerfile", [])
 # }

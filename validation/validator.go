@@ -67,13 +67,18 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 
 	// Evaluate the Rego query
 	rs, err := regoQuery.Eval(context.Background())
+
+	// Get the number of policies evaluated by regoQuery
+	// fmt.Printf("Number of policies evaluated by regoQuery: %v\n", len(rs[0].Expressions))
+
 	if err != nil {
 		return fmt.Errorf("Error evaluating Rego: %v", err)
 	}
-	if rs.Allowed() == true {
-		fmt.Printf("Dockerfile Valdation Succeeded with %v\n", rs.Allowed())
+	if rs.Allowed() {
+		fmt.Printf("Dockerfile Valdation Succeeded with %v,\n %v policies evaluated\n", rs.Allowed(), len(rs))
+		return nil
 	} else {
-		fmt.Printf("Dockerfile Validation failed %v\n", rs.Allowed())
+		return fmt.Errorf("Dockerfile Validation failed %v,\n %v policies evaluated\n", rs.Allowed(), len(rs))
 	}
 	return nil
 
