@@ -1,17 +1,20 @@
     package dockerfile_validation
 
 # evaluate_package imports and evaluates all rules within the package
-evaluate_package {
+allow {
    not untrusted_base_image
-    not latest_base_image
+   not latest_base_image
     # deny_secrets
 }
 
 # Enforce a Base Image Prefix with Chainguard images:
-untrusted_base_image {
-    input[i].Cmd == "from"
-    val := split(input[i].Value, "/")
-    val[0] == "cgr.dev/chainguard/"  
+# allowed_images := ["cgr.dev"]
+
+untrusted_base_image{
+	input[i].Cmd == "from"
+	val := split(input[i].Value[_], "/")
+
+	"cgr.dev" != val[0]
 }
 
 
