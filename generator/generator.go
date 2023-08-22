@@ -44,60 +44,67 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 		return "", fmt.Errorf("error parsing YAML: %v", err)
 	}
 
-	dockerfile := fmt.Sprintf("FROM %s\n", config.Dockerfile[0].From)
-	dockerfile += fmt.Sprintf("WORKDIR %s\n", config.Dockerfile[0].Workdir)
-	if config.Dockerfile[0].Arg != "" {
-		dockerfile += fmt.Sprintf("ARG %s\n", config.Dockerfile[0].Arg)
-	}
-	if config.Dockerfile[0].Env != "" {
-		dockerfile += fmt.Sprintf("ENV %s\n", config.Dockerfile[0].Env)
-	}
-	if config.Dockerfile[0].Label != "" {
-		dockerfile += fmt.Sprintf("LABEL %s\n", config.Dockerfile[0].Label)
-	}
-	if config.Dockerfile[0].Maintainer != "" {
-		dockerfile += fmt.Sprintf("MAINTAINER %s\n", config.Dockerfile[0].Maintainer)
-	}
-	if config.Dockerfile[0].User != "" {
-		dockerfile += fmt.Sprintf("USER %s\n", config.Dockerfile[0].User)
-	}
-	if config.Dockerfile[0].Volume != "" {
-		dockerfile += fmt.Sprintf("VOLUME %s\n", config.Dockerfile[0].Volume)
-	}
-	if config.Dockerfile[0].OnBuild != "" {
-		dockerfile += fmt.Sprintf("ONBUILD %s\n", config.Dockerfile[0].OnBuild)
-	}
-	if config.Dockerfile[0].StopSignal != "" {
-		dockerfile += fmt.Sprintf("STOPSIGNAL %s\n", config.Dockerfile[0].StopSignal)
-	}
-	if config.Dockerfile[0].Healthcheck != "" {
-		dockerfile += fmt.Sprintf("HEALTHCHECK %s\n", config.Dockerfile[0].Healthcheck)
-	}
-
-	for _, copy := range config.Dockerfile[0].Copy {
-		if copy != "" {
-			dockerfile += fmt.Sprintf("COPY %s\n", copy)
+	dockerfile := ""
+	for _, stageData := range config.Dockerfile {
+		dockerfile += fmt.Sprintf("# Stage: %d\n", stageData.Stage)
+		dockerfile += fmt.Sprintf("FROM %s\n", stageData.From)
+		if stageData.Workdir != "" {
+			dockerfile += fmt.Sprintf("WORKDIR %s\n", stageData.Workdir)
 		}
-	}
-
-	for _, run := range config.Dockerfile[0].Run {
-		if run != "" {
-			dockerfile += fmt.Sprintf("RUN %s\n", run)
+		if stageData.Arg != "" {
+			dockerfile += fmt.Sprintf("ARG %s\n", stageData.Arg)
 		}
+		if stageData.Env != "" {
+			dockerfile += fmt.Sprintf("ENV %s\n", stageData.Env)
+		}
+		if stageData.Label != "" {
+			dockerfile += fmt.Sprintf("LABEL %s\n", stageData.Label)
+		}
+		if stageData.Maintainer != "" {
+			dockerfile += fmt.Sprintf("MAINTAINER %s\n", stageData.Maintainer)
+		}
+		if stageData.User != "" {
+			dockerfile += fmt.Sprintf("USER %s\n", stageData.User)
+		}
+		if stageData.Volume != "" {
+			dockerfile += fmt.Sprintf("VOLUME %s\n", stageData.Volume)
+		}
+		if stageData.OnBuild != "" {
+			dockerfile += fmt.Sprintf("ONBUILD %s\n", stageData.OnBuild)
+		}
+		if stageData.StopSignal != "" {
+			dockerfile += fmt.Sprintf("STOPSIGNAL %s\n", stageData.StopSignal)
+		}
+		if stageData.Healthcheck != "" {
+			dockerfile += fmt.Sprintf("HEALTHCHECK %s\n", stageData.Healthcheck)
+		}
+
+		for _, copy := range stageData.Copy {
+			if copy != "" {
+				dockerfile += fmt.Sprintf("COPY %s\n", copy)
+			}
+		}
+
+		for _, run := range stageData.Run {
+			if run != "" {
+				dockerfile += fmt.Sprintf("RUN %s\n", run)
+			}
+		}
+
+		if len(stageData.Entrypoint) > 0 {
+			dockerfile += fmt.Sprintf("ENTRYPOINT [\"%s\"]\n", strings.Join(stageData.Entrypoint, "\",\""))
+		}
+		if len(stageData.Cmd) > 0 {
+			dockerfile += fmt.Sprintf("CMD [\"%s\"]\n", strings.Join(stageData.Cmd, "\",\""))
+		}
+		if len(stageData.Add) > 0 {
+			dockerfile += fmt.Sprintf("ADD %s\n", strings.Join(stageData.Add, " "))
+		}
+		if len(stageData.Shell) > 0 {
+			dockerfile += fmt.Sprintf("SHELL [\"%s\"]\n", strings.Join(stageData.Shell, "\",\""))
+		}
+		dockerfile += "\n" // Add an empty line between stages
 	}
 
-	if len(config.Dockerfile[0].Entrypoint) > 0 {
-		dockerfile += fmt.Sprintf("ENTRYPOINT [\"%s\"]\n", strings.Join(config.Dockerfile[0].Entrypoint, "\",\""))
-	}
-	if len(config.Dockerfile[0].Cmd) > 0 {
-		dockerfile += fmt.Sprintf("CMD [\"%s\"]\n", strings.Join(config.Dockerfile[0].Cmd, "\",\""))
-	}
-	if len(config.Dockerfile[0].Add) > 0 {
-		dockerfile += fmt.Sprintf("ADD %s\n", config.Dockerfile[0].Add)
-	}
-	if len(config.Dockerfile[0].Shell) > 0 {
-		dockerfile += fmt.Sprintf("SHELL %s\n", strings.Join(config.Dockerfile[0].Shell, "\",\""))
-
-	}
 	return dockerfile, nil
 }

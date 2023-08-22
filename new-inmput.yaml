@@ -1,22 +1,24 @@
 dockerfile:
-- stage: 1
+- stage: 0
   from: "cgr.dev/chainguard/*"
   workdir: "/app"
   copy: 
-  - ". /app"
+  - . /app
+  env: "test=1"
   run:
   - "go mod download"
   - "go build -o app"
-
-
-- stage: 2
+  shell:
+  - "bash -c"
+  
+- stage: 1
   from: "scratch"
   workdir: "/app"
   copy:
-  - "/app"
-  - "/app"
+  - /app/app /app
   entrypoint:
   - "./app"
     
 
 
+# Loop over stage and generate a part dockerfile, generate one Dockerfile for one inputfile
