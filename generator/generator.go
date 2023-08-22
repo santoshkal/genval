@@ -14,26 +14,25 @@ type DockerfileConfig struct {
 }
 
 type DockerfileData struct {
-	From            string   `yaml:"from"`
-	Workdir         string   `yaml:"workdir"`
-	Copy            []string `yaml:"copy"`
-	Run             []string `yaml:"run"`
-	Entrypoint      []string `yaml:"entrypoint"`
-	Arg             string   `yaml:"arg"`
-	Env             string   `yaml:"env"`
-	Label           string   `yaml:"label"`
-	Maintainer      string   `yaml:"maintainer"`
-	Cmd             []string `yaml:"cmd"`
-	Expose          int      `yaml:"expose"`
-	User            string   `yaml:"user"`
-	Add             []string `yaml:"add"`
-	Volume          string   `yaml:"volume"`
-	OnBuild         string   `yaml:"onbuild"`
-	StopSignal      string   `yaml:"stopsignal"`
-	Healthcheck     string   `yaml:"healthcheck"`
-	Shell           []string `yaml:"shell"`
-	Stage           int      `json:"_"`
-	ProcessingStage int      `json:"stage"`
+	From        string   `yaml:"from"`
+	Workdir     string   `yaml:"workdir"`
+	Copy        []string `yaml:"copy"`
+	Run         []string `yaml:"run"`
+	Entrypoint  []string `yaml:"entrypoint"`
+	Arg         string   `yaml:"arg"`
+	Env         string   `yaml:"env"`
+	Label       string   `yaml:"label"`
+	Maintainer  string   `yaml:"maintainer"`
+	Cmd         []string `yaml:"cmd"`
+	Expose      int      `yaml:"expose"`
+	User        string   `yaml:"user"`
+	Add         []string `yaml:"add"`
+	Volume      string   `yaml:"volume"`
+	OnBuild     string   `yaml:"onbuild"`
+	StopSignal  string   `yaml:"stopsignal"`
+	Healthcheck string   `yaml:"healthcheck"`
+	Shell       []string `yaml:"shell"`
+	Stage       int      `json:"_"`
 }
 
 // GenerateDockerfile generates a Dockerfile content based on the provided YAML data.
