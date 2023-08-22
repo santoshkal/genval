@@ -1,8 +1,9 @@
 dockerfile:
 - stage: 1
-  from: "golang:1.20-alpint"
+  from: "cgr.dev/chainguard/*"
   workdir: "/app"
-  copy: ". ."
+  copy: 
+  - ". /app"
   run:
   - "go mod download"
   - "go build -o app"
@@ -11,7 +12,9 @@ dockerfile:
 - stage: 2
   from: "scratch"
   workdir: "/app"
-  copy: "/app/app ."
+  copy:
+  - "/app"
+  - "/app"
   entrypoint:
   - "./app"
     

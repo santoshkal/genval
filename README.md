@@ -7,3 +7,7 @@
 - Update the Yaml parser to include all the Dockerfile instructions
 - Update error messages for Validation steps
 - Update messages for succussful validation of the Dockerfile
+
+
+C, Go, Nodejs, Python, Rust
+

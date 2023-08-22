@@ -55,10 +55,12 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 		"input": dockerfileInstructions,
 	}
 
+	// policies := []string{"untrusted_base_image", "latest_base_image"}
+	// for _, policy := range policies {
 	// Create Rego for query and evaluation
 	regoQuery := rego.New(
 		// Rego rule package
-		// rego.Package("data.dockerfile_validation"),
+		// rego.Package("data.dockerfile_validation.policy"),
 		rego.Query("data.dockerfile_validation.allow"),
 		// rego policy filea
 		rego.Module("./policy/security.rego", string(regoPolicyCode)),
@@ -71,6 +73,7 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 
 	// Get the number of policies evaluated by regoQuery
 	fmt.Printf("Number of policies evaluated by regoQuery: %v\n", len(rs))
+	// fmt.Printf("Number of policies evaluated by regoQuery: %v\n", rs[0].Expressions[0].Text)
 
 	if err != nil {
 		return fmt.Errorf("Error evaluating Rego: %v", err)
@@ -81,6 +84,8 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 	} else {
 		return fmt.Errorf("Dockerfile Validation failed %v,\n %v policies evaluated\n", rs.Allowed(), len(rs))
 	}
-	return nil
 
+	return nil
 }
+
+// }

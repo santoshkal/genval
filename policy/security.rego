@@ -1,29 +1,35 @@
     package dockerfile_validation
 
 # evaluate_package imports and evaluates all rules within the package
-allow {
-   not untrusted_base_image
-   not latest_base_image
-    # deny_secrets
-}
+# allow {
+#    not untrusted_base_image
+#    not latest_base_image
+#     # deny_secrets
+# }
 
 # Enforce a Base Image Prefix with Chainguard images:
 # allowed_images := ["cgr.dev"]
 
-untrusted_base_image{
+untrusted_base_image[msg]{
 	input[i].Cmd == "from"
 	val := split(input[i].Value[_], "/")
 
-	"cgr.dev" != val[0]
+	"cgr.dev" == val[0]
+    msg := sprintf("Base image is prefixed with cgr.dev", [])
 }
 
 
-# Avoid 'Latest' Tag for Base Images:
-latest_base_image {
+# # Avoid using 'latest' tag for Base Images:
+latest_base_image[msg]{
     input[i].Cmd == "from"
     val := split(input[i].Value[0], ":")
-    not contains(lower(val[1]), "latest")
+    val[1] != "latest"
+    msg := sprintf("Base image must not be tagged with 'latest'", [])
 }
+
+# Check for SemVer Tag for Base Images:
+
+
 
 # # Detect Secrets in ENV Keys:
 # secrets_env = ["password", "secret", "key", "token"]
@@ -43,3 +49,4 @@ latest_base_image {
 #     multi_stage == false
 #     msg := sprintf("Not a multi-stage Dockerfile", [])
 # }
+

@@ -1,5 +1,5 @@
-FROM cgr.dev/chainguard/go:dev-1.20
+FROM cgr.dev/chainguard/*
 WORKDIR /app
 COPY . /app
-RUN go build -o myapp
-ENTRYPOINT ["./myapp"]
+RUN go mod download
+RUN go build -o app
