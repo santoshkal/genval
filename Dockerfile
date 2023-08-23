@@ -1,15 +1,16 @@
 # Stage: 0
-FROM cgr.dev/chainguard/*
+FROM cgr.dev/chainguard/* as build
 WORKDIR /app
 ENV test=1
 COPY . /app
-RUN go mod download
-RUN go build -o app
+RUN go mod download \
+    && go mod verify \
+    && go build -o app
 SHELL ["bash -c"]
 
 # Stage: 1
 FROM scratch
 WORKDIR /app
-COPY /app/app /app
+COPY --chown=65532:65532 --from=build  /app/app /app
 ENTRYPOINT ["./app"]
 

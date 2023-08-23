@@ -38,15 +38,23 @@ type DockerfileData struct {
 // GenerateDockerfile generates a Dockerfile content based on the provided YAML data.
 func GenerateDockerfile(yamlData []byte) (string, error) {
 	var config DockerfileConfig
+
 	err := yaml.Unmarshal(yamlData, &config)
 	if err != nil {
 		return "", fmt.Errorf("error parsing YAML: %v", err)
 	}
 
+	// Move the flags out as variables
 	var dockerfile strings.Builder
+	baseFlags := "as build"
 	for _, stageData := range config.Dockerfile {
 		dockerfile.WriteString(fmt.Sprintf("# Stage: %d\n", stageData.Stage))
-		dockerfile.WriteString(fmt.Sprintf("FROM %s\n", stageData.From))
+		if stageData.Stage == 0 && stageData.From != "" {
+			dockerfile.WriteString(fmt.Sprintf("FROM %s %s\n", stageData.From, baseFlags))
+		} else {
+
+			dockerfile.WriteString(fmt.Sprintf("FROM %s\n", stageData.From))
+		}
 
 		fields := []struct {
 			Condition bool
@@ -71,18 +79,31 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			}
 		}
 
+		copyFlags := "--chown=65532:65532 --from=build "
+
 		for _, copy := range stageData.Copy {
-			if copy != "" {
+			if copy != "" && stageData.Stage > 0 {
+				dockerfile.WriteString(fmt.Sprintf("COPY %s %s\n", copyFlags, copy))
+			} else {
 				dockerfile.WriteString(fmt.Sprintf("COPY %s\n", copy))
 			}
+
 		}
 
-		for _, run := range stageData.Run {
-			if run != "" {
-				dockerfile.WriteString(fmt.Sprintf("RUN %s\n", run))
+		var runInstructions []string
+		if stageData.Stage == 0 && len(stageData.Run) > 1 {
+			for _, run := range config.Dockerfile[0].Run {
+				if run != "" {
+					runInstructions = append(runInstructions, run)
+				}
+			}
+
+			if len(runInstructions) > 0 {
+				dockerfile.WriteString("RUN ")
+				dockerfile.WriteString(strings.Join(runInstructions, " \\\n    && "))
+				dockerfile.WriteString("\n")
 			}
 		}
-
 		if len(stageData.Entrypoint) > 0 {
 			dockerfile.WriteString(fmt.Sprintf("ENTRYPOINT [\"%s\"]\n", strings.Join(stageData.Entrypoint, "\",\"")))
 		}
