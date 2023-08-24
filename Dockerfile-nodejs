@@ -1,0 +1,23 @@
+# Stage: 0
+FROM cgr.dev/chainguard/node:latest-dev as build
+WORKDIR $APP_HOME
+COPY package*.json $APP_HOME/
+RUN useradd -m -s /bin/bash -d $APP_HOME myappuser
+COPY src/ $APP_HOME/src/
+ENV APP_HOME=/app
+RUN apt-get update \
+    && apt-get install -y python3 make g++ \
+    && apt-get clean \
+    && npm ci
+
+# Stage: 1
+FROM cgr.dev/chainguard/node:latest
+CMD ["node","src/app.js"]
+USER $APP_USER
+WORKDIR $APP_HOME
+COPY --chown=65532:65532 --from=build  $APP_HOME/node_modules/ $APP_HOME/node_modules/
+RUN useradd -m -s /bin/bash -d $APP_HOME $APP_USER
+COPY --chown=65532:65532 --from=build  src/ $APP_HOME/src/
+ENV APP_HOME=/app
+ENV ENV APP_USER=myappuser
+

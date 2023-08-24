@@ -10,22 +10,24 @@
 # Enforce a Base Image Prefix with Chainguard images:
 # allowed_images := ["cgr.dev"]
 
-untrusted_base_image[msg]{
+# Avoid using 'latest' tag for Images other than Chainguard images:
+latest_base_image{
+    input[i].Cmd == "from"
+    val := split(input[i].Value[0], ":")
+    val[1] != "latest"
+    # msg := sprintf("Base image must not be tagged with 'latest'", [])
+}
+
+
+untrusted_base_image{
 	input[i].Cmd == "from"
 	val := split(input[i].Value[_], "/")
 
 	"cgr.dev" == val[0]
-    msg := sprintf("Base image is prefixed with cgr.dev", [])
+    # msg := sprintf("Base image is prefixed with cgr.dev", [])
 }
 
 
-# # Avoid using 'latest' tag for Base Images:
-latest_base_image[msg]{
-    input[i].Cmd == "from"
-    val := split(input[i].Value[0], ":")
-    val[1] != "latest"
-    msg := sprintf("Base image must not be tagged with 'latest'", [])
-}
 
 # Check for SemVer Tag for Base Images:
 

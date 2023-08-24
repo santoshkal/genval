@@ -1,0 +1,44 @@
+# Stage 0: Build environment
+dockerfile:
+- stage: 0
+  # Use latest-dev for the latest development version
+  from: "cgr.dev/chainguard/rust:latest"
+  # Set an environment variable for the app home directory
+  env: "APP_HOME=/app" 
+  # Create a user
+  run:
+  - useradd -m -s /bin/bash -d $APP_HOME myappuser 
+  # Set the working directory
+  workdir: "$APP_HOME"
+# Install musl-tools and clean-up to reduce image size
+  run:   
+  - "apt-get update"
+  - "apt-get install -y musl-tools" # 
+  - "apt-get clean"
+  # # Copy the application source code
+  copy:
+  - "src/ $APP_HOME/src/"
+  - "Cargo.toml Cargo.lock $APP_HOME/"
+  runCmd:
+  - cargo build --release --target x86_64-unknown-linux-musl
+
+- stage: 1
+  from: "cgr.dev/chainguard/static:latest"
+
+  env: "APP_USER=myappuser"
+  env1: "APP_HOME=/app"
+ # Create a user
+  run:
+  - "useradd -m -s /bin/bash -d $APP_HOME $APP_USER" 
+  # Set the working directory
+  workdir: "$APP_HOME"
+  # Copy the compiled application from the build stage
+  copy:
+  - $APP_HOME/target/x86_64-unknown-linux-musl/release/myapp $APP_HOME/myapp
+  # Drop root privileges and run the application as the non-root user
+  user: "$APP_USER"
+  # Set the entry point for the container
+  cmd:
+  - "./myapp"
+
+

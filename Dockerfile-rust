@@ -1,0 +1,21 @@
+# Stage: 0
+FROM cgr.dev/chainguard/rust:latest as build
+WORKDIR $APP_HOME
+COPY src/ $APP_HOME/src/
+COPY Cargo.toml Cargo.lock $APP_HOME/
+RUN apt-get update \
+    && apt-get install -y musl-tools \
+    && apt-get clean
+ENV APP_HOME=/app
+RUN cargo build --release --target x86_64-unknown-linux-musl
+
+# Stage: 1
+FROM cgr.dev/chainguard/static:latest
+CMD ["./myapp"]
+USER $APP_USER
+WORKDIR $APP_HOME
+COPY --chown=65532:65532 --from=build  $APP_HOME/target/x86_64-unknown-linux-musl/release/myapp $APP_HOME/myapp
+RUN useradd -m -s /bin/bash -d $APP_HOME $APP_USER
+ENV APP_USER=myappuser
+ENV APP_HOME=/app
+

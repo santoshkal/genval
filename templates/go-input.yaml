@@ -1,0 +1,27 @@
+dockerfile:
+- stage: 0
+# Use latest-dev for the latest development version
+  from: "cgr.dev/chainguard/go:latest"
+  env: "env=dev"
+  run:
+  - apt-get update
+  workdir: "/server"
+  copy: 
+  - "*.go ."
+  run:
+  - go mod download
+  run:
+  - go build -o app
+  run:
+  - chmod +x app
+
+  
+- stage: 1
+  from: "cgr.dev/chainguard/static:latest"
+  workdir: "/app"
+  copy:
+  - /server/app /app
+  cmd:
+  - "./app"
+    
+

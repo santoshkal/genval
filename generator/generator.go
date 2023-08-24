@@ -13,14 +13,23 @@ type DockerfileConfig struct {
 	Dockerfile []DockerfileData `yaml:"dockerfile"`
 }
 
+// type Copy struct {
+// 	Src  string `yaml:"src"`
+// 	Dest string `yaml:"dest"`
+// }
+
 type DockerfileData struct {
 	From        string   `yaml:"from"`
+	Env         string   `yaml:"env"`
+	Env1        string   `yaml:"env1"`
+	Env2        string   `yaml:"env2"`
 	Workdir     string   `yaml:"workdir"`
 	Copy        []string `yaml:"copy"`
+	CopyCmd     []string `yaml:"copyCmd"`
 	Run         []string `yaml:"run"`
+	RunCmd      []string `yaml:"runCmd"`
 	Entrypoint  []string `yaml:"entrypoint"`
 	Arg         string   `yaml:"arg"`
-	Env         string   `yaml:"env"`
 	Label       string   `yaml:"label"`
 	Maintainer  string   `yaml:"maintainer"`
 	Cmd         []string `yaml:"cmd"`
@@ -56,57 +65,8 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			dockerfile.WriteString(fmt.Sprintf("FROM %s\n", stageData.From))
 		}
 
-		fields := []struct {
-			Condition bool
-			Prefix    string
-			Values    []string
-		}{
-			{stageData.Workdir != "", "WORKDIR", []string{stageData.Workdir}},
-			{stageData.Arg != "", "ARG", []string{stageData.Arg}},
-			{stageData.Env != "", "ENV", []string{stageData.Env}},
-			{stageData.Label != "", "LABEL", []string{stageData.Label}},
-			{stageData.Maintainer != "", "MAINTAINER", []string{stageData.Maintainer}},
-			{stageData.User != "", "USER", []string{stageData.User}},
-			{stageData.Volume != "", "VOLUME", []string{stageData.Volume}},
-			{stageData.OnBuild != "", "ONBUILD", []string{stageData.OnBuild}},
-			{stageData.StopSignal != "", "STOPSIGNAL", []string{stageData.StopSignal}},
-			{stageData.Healthcheck != "", "HEALTHCHECK", []string{stageData.Healthcheck}},
-		}
-
-		for _, field := range fields {
-			if field.Condition {
-				dockerfile.WriteString(fmt.Sprintf("%s %s\n", field.Prefix, strings.Join(field.Values, " ")))
-			}
-		}
-
 		copyFlags := "--chown=65532:65532 --from=build "
 
-		for _, copy := range stageData.Copy {
-			if copy != "" && stageData.Stage > 0 {
-				dockerfile.WriteString(fmt.Sprintf("COPY %s %s\n", copyFlags, copy))
-			} else {
-				dockerfile.WriteString(fmt.Sprintf("COPY %s\n", copy))
-			}
-
-		}
-
-		var runInstructions []string
-		if stageData.Stage == 0 && len(stageData.Run) > 1 {
-			for _, run := range config.Dockerfile[0].Run {
-				if run != "" {
-					runInstructions = append(runInstructions, run)
-				}
-			}
-
-			if len(runInstructions) > 0 {
-				dockerfile.WriteString("RUN ")
-				dockerfile.WriteString(strings.Join(runInstructions, " \\\n    && "))
-				dockerfile.WriteString("\n")
-			}
-		}
-		if len(stageData.Entrypoint) > 0 {
-			dockerfile.WriteString(fmt.Sprintf("ENTRYPOINT [\"%s\"]\n", strings.Join(stageData.Entrypoint, "\",\"")))
-		}
 		if len(stageData.Cmd) > 0 {
 			dockerfile.WriteString(fmt.Sprintf("CMD [\"%s\"]\n", strings.Join(stageData.Cmd, "\",\"")))
 		}
@@ -115,6 +75,89 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 		}
 		if len(stageData.Shell) > 0 {
 			dockerfile.WriteString(fmt.Sprintf("SHELL [\"%s\"]\n", strings.Join(stageData.Shell, "\",\"")))
+		}
+
+		fieldsOrder := getFieldOrder(stageData)
+
+		for _, fieldName := range fieldsOrder {
+			switch fieldName {
+			case "Workdir":
+				dockerfile.WriteString(fmt.Sprintf("WORKDIR %s\n", stageData.Workdir))
+			case "Arg":
+				dockerfile.WriteString(fmt.Sprintf("ARG %s\n", stageData.Arg))
+			case "Env":
+				dockerfile.WriteString(fmt.Sprintf("ENV %s\n", stageData.Env))
+			case "Copy":
+				for _, copy := range stageData.Copy {
+					if copy != "" && stageData.Stage > 0 {
+						dockerfile.WriteString(fmt.Sprintf("COPY %s %s\n", copyFlags, copy))
+					} else {
+						dockerfile.WriteString(fmt.Sprintf("COPY %s\n", copy))
+					}
+
+				}
+			case "CopyCmd":
+				for _, copyCmd := range stageData.CopyCmd {
+					if copyCmd != "" && stageData.Stage > 0 {
+						dockerfile.WriteString(fmt.Sprintf("COPY %s %s\n", copyFlags, copyCmd))
+					} else {
+						dockerfile.WriteString(fmt.Sprintf("COPY %s\n", copyCmd))
+					}
+
+				}
+			case "Run":
+				runInstructions := make([]string, 0)
+				for _, runInstruction := range stageData.Run {
+					if runInstruction != "" {
+						runInstructions = append(runInstructions, runInstruction)
+					}
+				}
+				if len(runInstructions) > 0 {
+					dockerfile.WriteString("RUN ")
+					dockerfile.WriteString(strings.Join(runInstructions, " \\\n    && "))
+					dockerfile.WriteString("\n")
+				}
+			case "RunCmd":
+				runCmdInstructions := make([]string, 0)
+				for _, runCmdInstruction := range stageData.RunCmd {
+					if runCmdInstruction != "" {
+						runCmdInstructions = append(runCmdInstructions, runCmdInstruction)
+					}
+				}
+				if len(runCmdInstructions) > 0 {
+					dockerfile.WriteString("RUN ")
+					dockerfile.WriteString(strings.Join(runCmdInstructions, " \\\n    && "))
+					dockerfile.WriteString("\n")
+				}
+			case "Env1":
+				dockerfile.WriteString(fmt.Sprintf("ENV %s\n", stageData.Env1))
+			case "Env2":
+				dockerfile.WriteString(fmt.Sprintf("ENV %s\n", stageData.Env2))
+			case "Entrypoint":
+				dockerfile.WriteString(fmt.Sprintf("ENTRYPOINT %s\n", strings.Join(stageData.Entrypoint, " ")))
+			case "Label":
+				dockerfile.WriteString(fmt.Sprintf("LABEL %s\n", stageData.Label))
+			case "Maintainer":
+				dockerfile.WriteString(fmt.Sprintf("MAINTAINER %s\n", stageData.Maintainer))
+			case "Cmd":
+				dockerfile.WriteString(fmt.Sprintf("CMD %s\n", strings.Join(stageData.Cmd, " ")))
+			case "Expose":
+				dockerfile.WriteString(fmt.Sprintf("EXPOSE %d\n", stageData.Expose))
+			case "User":
+				dockerfile.WriteString(fmt.Sprintf("USER %s\n", stageData.User))
+			case "Add":
+				dockerfile.WriteString(fmt.Sprintf("ADD %s\n", strings.Join(stageData.Add, " ")))
+			case "Volume":
+				dockerfile.WriteString(fmt.Sprintf("VOLUME %s\n", stageData.Volume))
+			case "OnBuild":
+				dockerfile.WriteString(fmt.Sprintf("ONBUILD %s\n", stageData.OnBuild))
+			case "StopSignal":
+				dockerfile.WriteString(fmt.Sprintf("STOPSIGNAL %s\n", stageData.StopSignal))
+			case "Healthcheck":
+				dockerfile.WriteString(fmt.Sprintf("HEALTHCHECK %s\n", stageData.Healthcheck))
+			case "Shell":
+				dockerfile.WriteString(fmt.Sprintf("SHELL %s\n", strings.Join(stageData.Shell, " ")))
+			}
 		}
 
 		dockerfile.WriteString("\n") // Add an empty line between stages

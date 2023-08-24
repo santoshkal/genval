@@ -3,7 +3,8 @@ dockerfile:
   # from: golang:latest
   workdir: /app
   copy:
-    - . /app
+    - src: . /app
+    - dest: /app
   run:
     - go build -o myapp
   entrypoint:

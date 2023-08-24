@@ -1,0 +1,45 @@
+# Stage 0: Build environment
+dockerfile:
+- stage: 0
+  from: "cgr.dev/chainguard/node:latest-dev"
+# Set ENV variables for build
+  env: "APP_HOME=/app"
+# Create a non root user fr the build
+  run:
+  - "useradd -m -s /bin/bash -d $APP_HOME myappuser"
+# Set the working directory
+  workdir: "$APP_HOME"
+# Copy dependencies
+  copy:
+  - "package*.json $APP_HOME/" 
+# Install build and aplication dependencies
+  runCmd:
+  - "apt-get update"
+  - "apt-get install -y python3 make g++" # Update according to your needs
+  - "apt-get clean"
+  - "npm ci"
+# Copy the application source code
+  copyCmd:
+  - "src/ $APP_HOME/src/"
+
+# Stage 2: Runtime environment
+- stage: 1
+  from: "cgr.dev/chainguard/node:latest"
+# Set environment variables for runtime
+  env: "APP_HOME=/app"
+  env1: "ENV APP_USER=myappuser"
+# Create a non-root user to run the application
+  run:
+  - "useradd -m -s /bin/bash -d $APP_HOME $APP_USER"
+# Set the working directory
+  workdir: $APP_HOME
+# Copy installed node_modules from the build stage
+  copy:
+  - "$APP_HOME/node_modules/ $APP_HOME/node_modules/"
+  copyCmd:
+  - "src/ $APP_HOME/src/"
+# Drop root privileges and run the application as the non-root user
+  user: "$APP_USER"
+# Set the entry point for the container
+  cmd: ["node", "src/app.js"]
+

@@ -3,6 +3,7 @@ package validation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -51,17 +52,26 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 	// Prepare Rego input data
 	dockerfileInstructions := ParseDockerfileContent(dockerfileContent)
 
-	inputData := map[string]interface{}{
-		"input": dockerfileInstructions,
+	jsonData, err := json.Marshal(dockerfileInstructions)
+	if err != nil {
+		fmt.Println("Error converting to JSON:", err)
+		return nil
 	}
+
+	inputData := map[string]interface{}{
+		"input": string(jsonData),
+	}
+
+	// fmt.Printf("Input data: %v\n", inputData)
 
 	// policies := []string{"untrusted_base_image", "latest_base_image"}
 	// for _, policy := range policies {
 	// Create Rego for query and evaluation
 	regoQuery := rego.New(
 		// Rego rule package
-		// rego.Package("data.dockerfile_validation.policy"),
-		rego.Query("data.dockerfile_validation.allow"),
+		rego.Query("data.dockerfile_validation"),
+		// rego.Query("data.dockerfile_validation.untrusted_base_image"),
+
 		// rego policy filea
 		rego.Module("./policy/security.rego", string(regoPolicyCode)),
 		// Dockerfile as input
@@ -74,18 +84,21 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 	// Get the number of policies evaluated by regoQuery
 	fmt.Printf("Number of policies evaluated by regoQuery: %v\n", len(rs))
 	// fmt.Printf("Number of policies evaluated by regoQuery: %v\n", rs[0].Expressions[0].Text)
-
-	if err != nil {
-		return fmt.Errorf("Error evaluating Rego: %v", err)
+	policyNames := []string{
+		"untrusted_base_image",
+		"latest_base_image",
+		// Add more policy names as needed...
 	}
-	if rs.Allowed() {
-		fmt.Printf("Dockerfile Valdation Succeeded with %v,\n %v policies evaluated\n", rs.Allowed(), len(rs))
-		return nil
-	} else {
-		return fmt.Errorf("Dockerfile Validation failed %v,\n %v policies evaluated\n", rs.Allowed(), len(rs))
+
+	for i, r := range rs {
+		for j, expr := range r.Expressions {
+			if j < len(policyNames) {
+				policyName := policyNames[j]
+				allowed := expr.Value.([]interface{})
+				fmt.Printf("Policy %d (%s): %v\n", i+1, policyName, allowed)
+			}
+		}
 	}
 
 	return nil
 }
-
-// }

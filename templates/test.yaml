@@ -1,0 +1,16 @@
+dockerfile:
+- stage: 0
+  from: cgr.dev/chainguard/*
+  workdir: /app
+  copy:
+    - . /app
+  env: "env=1"
+  run:
+    - go mod download
+    - go mod verify
+  copyCmd:
+  - /app /app/
+  shell:
+    - bash -c
+  runCmd:
+    - apt update

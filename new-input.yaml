@@ -3,12 +3,14 @@ dockerfile:
   from: "cgr.dev/chainguard/*"
   workdir: "/app"
   copy: 
-  - . /app
+  - /app /app
   env: "test=1"
   run:
   - "go mod download"
   - "go mod verify"
   - "go build -o app"
+  copyCmd:
+  - /app /app
   shell:
   - "bash -c"
   
@@ -16,7 +18,7 @@ dockerfile:
   from: "scratch"
   workdir: "/app"
   copy:
-  - /app/app /app
+  - /app /app
   entrypoint:
   - "./app"
     
