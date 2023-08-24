@@ -17,16 +17,23 @@ type DockerfileData struct {
 	From        string   `yaml:"from"`
 	Workdir     string   `yaml:"workdir"`
 	Copy        []string `yaml:"copy"`
+	CopyCmd     []string `yaml:"copycmd"`
+	CopyCmd1    []string `yaml:"copycmd1"`
 	Run         []string `yaml:"run"`
+	RunCmd      []string `yaml:"runcmd"`
+	RunCmd1     []string `yaml:"runcmd1"`
 	Entrypoint  []string `yaml:"entrypoint"`
 	Arg         string   `yaml:"arg"`
 	Env         string   `yaml:"env"`
+	Env1        string   `yaml:"env1"`
+	Env2        string   `yaml:"env2"`
 	Label       string   `yaml:"label"`
 	Maintainer  string   `yaml:"maintainer"`
 	Cmd         []string `yaml:"cmd"`
 	Expose      int      `yaml:"expose"`
 	User        string   `yaml:"user"`
 	Add         []string `yaml:"add"`
+	AddCmd      []string `yaml:"addcmd"`
 	Volume      string   `yaml:"volume"`
 	OnBuild     string   `yaml:"onbuild"`
 	StopSignal  string   `yaml:"stopsignal"`
