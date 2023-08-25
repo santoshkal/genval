@@ -1,0 +1,20 @@
+# Stage: 0
+FROM cgr.dev/chainguard/python:latest-dev as build
+WORKDIR $APP_HOME
+ENV APP_HOME=/app
+COPY requirements.txt $APP_HOME/
+COPY src/ $APP_HOME/src/
+RUN useradd -m -s /bin/bash -d $APP_HOME myappuser
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Stage: 1
+FROM cgr.dev/chainguard/static:latest
+WORKDIR $APP_HOME
+ENV APP_USER=myappuser
+ENV APP_HOME=/app
+USER $APP_USER
+COPY --chown=65532:65532 --from=build  $APP_HOME /usr/local/lib/python3.9/site-packages/
+COPY src/ $APP_HOME/src/
+RUN useradd -m -s /bin/bash -d $APP_HOME $APP_USER
+CMD ["python","src/app.py"]
+

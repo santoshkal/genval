@@ -1,25 +1,30 @@
 dockerfile:
 - stage: 0
-  from: "cgr.dev/chainguard/*"
-  workdir: "/app"
-  copy: 
-  - . /app
-  env: "test=1"
+  from: "cgr.dev/chainguard/go:latest"
+  env: "APP_HOME=/app"
   run:
-  - "go mod download"
-  - "go mod verify"
-  - "go build -o app"
-  shell:
-  - "bash -c"
-  
-- stage: 1
-  from: "scratch"
-  workdir: "/app"
+  - "useradd -m -s /bin/bash -d $APP_HOME myappuser"
+  workdir: "$APP_HOME"
   copy:
-  - /app/app /app
-  entrypoint:
-  - "./app"
-    
+  - "go.mod go.sum $APP_HOME/"
+  runCmd:
+  - apt-get update
+  - apt-get clean
+  - go mod download
+  copyCmd:
+  - src/ $APP_HOME/src/
+  runCmd1:
+  - "CGO_ENABLED=0 go build -o myapp $APP_HOME/src/main.go"
 
-
-# Loop over stage and generate a part dockerfile, generate one Dockerfile for one inputfile
+- stage: 1
+  from: "cgr.dev/chainguard/static:latest"
+  env: "APP_USER=myappuser"
+  env1: "APP_HOME=/app"
+  run:
+  - "useradd -m -s /bin/bash -d $APP_HOME $APP_USER"
+  workdir: "$APP_HOME"
+  copy:
+  - $APP_HOME/myapp $APP_HOME/myapp
+  user: "$APP_USER"
+  cmd:
+  - "./myapp"

@@ -15,21 +15,19 @@ type DockerfileConfig struct {
 
 type DockerfileData struct {
 	From        string   `yaml:"from"`
-	Workdir     string   `yaml:"workdir"`
-	Copy        []string `yaml:"copy"`
-	CopyCmd     []string `yaml:"copycmd"`
-	CopyCmd1    []string `yaml:"copycmd1"`
-	Run         []string `yaml:"run"`
-	RunCmd      []string `yaml:"runcmd"`
-	RunCmd1     []string `yaml:"runcmd1"`
-	Entrypoint  []string `yaml:"entrypoint"`
-	Arg         string   `yaml:"arg"`
 	Env         string   `yaml:"env"`
 	Env1        string   `yaml:"env1"`
 	Env2        string   `yaml:"env2"`
+	Arg         string   `yaml:"arg"`
+	Workdir     string   `yaml:"workdir"`
+	Copy        []string `yaml:"copy"`
+	Run         []string `yaml:"run"`
+	CopyCmd     []string `yaml:"copyCmd"`
+	RunCmd      []string `yaml:"runCmd"`
+	CopyCmd1    []string `yaml:"copyCmd1"`
+	RunCmd1     []string `yaml:"runCmd1"`
 	Label       string   `yaml:"label"`
 	Maintainer  string   `yaml:"maintainer"`
-	Cmd         []string `yaml:"cmd"`
 	Expose      int      `yaml:"expose"`
 	User        string   `yaml:"user"`
 	Add         []string `yaml:"add"`
@@ -38,9 +36,19 @@ type DockerfileData struct {
 	OnBuild     string   `yaml:"onbuild"`
 	StopSignal  string   `yaml:"stopsignal"`
 	Healthcheck string   `yaml:"healthcheck"`
+	Entrypoint  []string `yaml:"entrypoint"`
+	Cmd         []string `yaml:"cmd"`
 	Shell       []string `yaml:"shell"`
 	Stage       int      `json:"_"`
 }
+
+// func parseRunCommands(commands []string, dockerfile *strings.Builder) {
+// 	if len(commands) > 0 {
+// 		dockerfile.WriteString("RUN ")
+// 		dockerfile.WriteString(strings.Join(commands, " \\\n    && "))
+// 		dockerfile.WriteString("\n")
+// 	}
+// }
 
 // GenerateDockerfile generates a Dockerfile content based on the provided YAML data.
 func GenerateDockerfile(yamlData []byte) (string, error) {
@@ -71,6 +79,8 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			{stageData.Workdir != "", "WORKDIR", []string{stageData.Workdir}},
 			{stageData.Arg != "", "ARG", []string{stageData.Arg}},
 			{stageData.Env != "", "ENV", []string{stageData.Env}},
+			{stageData.Env1 != "", "ENV", []string{stageData.Env1}},
+			{stageData.Env2 != "", "ENV", []string{stageData.Env2}},
 			{stageData.Label != "", "LABEL", []string{stageData.Label}},
 			{stageData.Maintainer != "", "MAINTAINER", []string{stageData.Maintainer}},
 			{stageData.User != "", "USER", []string{stageData.User}},
@@ -96,21 +106,50 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			}
 
 		}
+		for _, copyCmd := range stageData.CopyCmd {
+			if copyCmd != "" {
+				dockerfile.WriteString(fmt.Sprintf("COPY %s\n", copyCmd))
+			}
+
+		}
+		// parseRunCommands(stageData.Run, &dockerfile)
+		// parseRunCommands(stageData.RunCmd, &dockerfile)
+		// parseRunCommands(stageData.RunCmd1, &dockerfile)
 
 		var runInstructions []string
-		if stageData.Stage == 0 && len(stageData.Run) > 1 {
-			for _, run := range config.Dockerfile[0].Run {
-				if run != "" {
-					runInstructions = append(runInstructions, run)
-				}
-			}
-
-			if len(runInstructions) > 0 {
-				dockerfile.WriteString("RUN ")
-				dockerfile.WriteString(strings.Join(runInstructions, " \\\n    && "))
-				dockerfile.WriteString("\n")
+		for _, runInstruction := range stageData.Run {
+			if runInstruction != "" {
+				runInstructions = append(runInstructions, runInstruction)
 			}
 		}
+		if len(runInstructions) > 0 {
+			dockerfile.WriteString("RUN ")
+			dockerfile.WriteString(strings.Join(runInstructions, " \\\n    && "))
+			dockerfile.WriteString("\n")
+		}
+		runCmdInstructions := make([]string, 0)
+		for _, runCmdInstruction := range stageData.RunCmd {
+			if runCmdInstruction != "" {
+				runCmdInstructions = append(runCmdInstructions, runCmdInstruction)
+			}
+		}
+		if len(runCmdInstructions) > 0 {
+			dockerfile.WriteString("RUN ")
+			dockerfile.WriteString(strings.Join(runCmdInstructions, " \\\n    && "))
+			dockerfile.WriteString("\n")
+		}
+		runCmd1Instructions := make([]string, 0)
+		for _, runCmd1Instruction := range stageData.RunCmd1 {
+			if runCmd1Instruction != "" {
+				runCmd1Instructions = append(runCmd1Instructions, runCmd1Instruction)
+			}
+		}
+		if len(runCmd1Instructions) > 0 {
+			dockerfile.WriteString("RUN ")
+			dockerfile.WriteString(strings.Join(runCmd1Instructions, " \\\n    && "))
+			dockerfile.WriteString("\n")
+		}
+
 		if len(stageData.Entrypoint) > 0 {
 			dockerfile.WriteString(fmt.Sprintf("ENTRYPOINT [\"%s\"]\n", strings.Join(stageData.Entrypoint, "\",\"")))
 		}
