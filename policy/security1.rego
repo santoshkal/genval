@@ -1,14 +1,51 @@
     package dockerfile_validation
 
-# Write Rego policies for Dockerfile validation that will be used by the Golang script to validate Dockerfiles for checking if Image starts with `cgr.dev` and does not contain `latest` tag.
+# evaluate_package imports and evaluates all rules within the package
+allow {
+   untrusted_base_image
+   latest_base_image
+    # deny_secrets
+}
 
-validate_dockerfile.rego
+# Enforce a Base Image Prefix with Chainguard images:
 
-    package dockerfile_validation
+untrusted_base_image{
+	input[_].cmd == "from"
+	val := split(input[_].value, "/")
 
-    violation[msg] {
-        input := parse_dockerfile(input.content)
-        input.base_image.tag != "latest"
-        not startswith(input.base_image.name, "cgr.dev")
-        msg := sprintf("Dockerfile %v violates the policy", [input.path])
-    }
+	"cgr.dev" == val[0]
+    # msg := sprintf("Base image is prefixed with cgr.dev", [])
+}
+
+
+# # Avoid using 'latest' tag for Base Images:
+latest_base_image{
+    input[_].cmd == "from"
+    val := split(input[_].value, ":")
+    val[1] == "latest"
+    # msg := sprintf("Base image must not be tagged with 'latest'", [])
+}
+
+# Check for SemVer Tag for Base Images:
+
+
+
+# # Detect Secrets in ENV Keys:
+# secrets_env = ["password", "secret", "key", "token"]
+
+# deny_secrets {
+#     input[i].Cmd == "env"
+#     val := input[i].Value
+#     contains(lower(val[_]), secrets_env[_])
+# }
+
+# multi_stage := true {
+#     input[_].Cmd == "copy"
+#     val := concat(" ", input[_].Flags)
+#     contains(lower(val), "--from=")
+# }
+# deny[msg] {
+#     multi_stage == false
+#     msg := sprintf("Not a multi-stage Dockerfile", [])
+# }
+

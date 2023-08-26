@@ -3,6 +3,7 @@ package validation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -45,14 +46,22 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 	// Read Rego policy code from file
 	regoPolicyCode, err := os.ReadFile(regoPolicyPath)
 	if err != nil {
-		return fmt.Errorf("Error reading Rego policy: %v", err)
+		return fmt.Errorf("error reading rego policy: %v", err)
 	}
 
 	// Prepare Rego input data
 	dockerfileInstructions := ParseDockerfileContent(dockerfileContent)
 
+	jsonData, err := json.Marshal(dockerfileInstructions)
+	if err != nil {
+		fmt.Println("Error converting to JSON:", err)
+		return nil
+	}
+
+	fmt.Println("JSON Data:", string(regoPolicyCode))
+
 	inputData := map[string]interface{}{
-		"input": dockerfileInstructions,
+		"input": string(jsonData),
 	}
 
 	// policies := []string{"untrusted_base_image", "latest_base_image"}
@@ -60,10 +69,10 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 	// Create Rego for query and evaluation
 	regoQuery := rego.New(
 		// Rego rule package
-		// rego.Package("data.dockerfile_validation.policy"),
-		rego.Query("data.dockerfile_validation.allow"),
+		rego.Package("data.dockerfile_validation"),
+		rego.Query("data.dockerfile_validation.untrusted_base_image"),
 		// rego policy filea
-		rego.Module("./policy/security.rego", string(regoPolicyCode)),
+		rego.Module("security.rego", string(regoPolicyCode)),
 		// Dockerfile as input
 		rego.Input(inputData),
 	)
@@ -73,16 +82,16 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 
 	// Get the number of policies evaluated by regoQuery
 	fmt.Printf("Number of policies evaluated by regoQuery: %v\n", len(rs))
-	// fmt.Printf("Number of policies evaluated by regoQuery: %v\n", rs[0].Expressions[0].Text)
+	// fmt.Printf("Number of policies evaluated by regoQuery: %v\n", rs[0].Expressions[0])
 
 	if err != nil {
-		return fmt.Errorf("Error evaluating Rego: %v", err)
+		return fmt.Errorf("error evaluating Rego: %v", err)
 	}
 	if rs.Allowed() {
 		fmt.Printf("Dockerfile Valdation Succeeded with %v,\n %v policies evaluated\n", rs.Allowed(), len(rs))
 		return nil
 	} else {
-		return fmt.Errorf("Dockerfile Validation failed %v,\n %v policies evaluated\n", rs.Allowed(), len(rs))
+		return fmt.Errorf("dockerfile validation failed %v,\n %v policies evaluated", rs.Allowed(), len(rs))
 	}
 
 	return nil

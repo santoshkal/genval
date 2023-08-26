@@ -28,3 +28,10 @@ dockerfile:
   user: "$APP_USER"
   cmd:
   - "./myapp"
+
+
+# Test logic
+    # - run:
+    # cmd: "CGO_ENABLED=0 go build -o myapp $APP_HOME/src/main.go"
+    # name: "build"
+    # runAfter: "copyCmd"  
