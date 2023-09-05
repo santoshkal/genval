@@ -40,8 +40,9 @@ func main() {
 
 	// Step 2: Validate Dockerfile using Rego
 	// Update the path to your policy file
-	policyFilePath := "./policy/security.rego"
+	policyFilePath := "security.rego"
 	err = validation.ValidateDockerfileUsingRego(generatedDockerfileContent, policyFilePath)
+	// fmt.Printf("Dockerfile JSON: %s\n", generatedDockerfileContent)
 	if err != nil {
 		fmt.Println("Dockerfile validation failed:", err)
 		return

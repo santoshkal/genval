@@ -76,13 +76,13 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			Prefix    string
 			Values    []string
 		}{
-			{stageData.Workdir != "", "WORKDIR", []string{stageData.Workdir}},
 			{stageData.Arg != "", "ARG", []string{stageData.Arg}},
 			{stageData.Env != "", "ENV", []string{stageData.Env}},
 			{stageData.Env1 != "", "ENV", []string{stageData.Env1}},
 			{stageData.Env2 != "", "ENV", []string{stageData.Env2}},
 			{stageData.Label != "", "LABEL", []string{stageData.Label}},
 			{stageData.Maintainer != "", "MAINTAINER", []string{stageData.Maintainer}},
+			{stageData.Workdir != "", "WORKDIR", []string{stageData.Workdir}},
 			{stageData.User != "", "USER", []string{stageData.User}},
 			{stageData.Volume != "", "VOLUME", []string{stageData.Volume}},
 			{stageData.OnBuild != "", "ONBUILD", []string{stageData.OnBuild}},
@@ -96,6 +96,9 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			}
 		}
 
+		if len(stageData.Add) > 0 {
+			dockerfile.WriteString(fmt.Sprintf("ADD %s\n", strings.Join(stageData.Add, " ")))
+		}
 		copyFlags := "--chown=65532:65532 --from=build "
 
 		for _, copy := range stageData.Copy {
@@ -106,15 +109,6 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			}
 
 		}
-		for _, copyCmd := range stageData.CopyCmd {
-			if copyCmd != "" {
-				dockerfile.WriteString(fmt.Sprintf("COPY %s\n", copyCmd))
-			}
-
-		}
-		// parseRunCommands(stageData.Run, &dockerfile)
-		// parseRunCommands(stageData.RunCmd, &dockerfile)
-		// parseRunCommands(stageData.RunCmd1, &dockerfile)
 
 		var runInstructions []string
 		for _, runInstruction := range stageData.Run {
@@ -127,6 +121,15 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			dockerfile.WriteString(strings.Join(runInstructions, " \\\n    && "))
 			dockerfile.WriteString("\n")
 		}
+		for _, copyCmd := range stageData.CopyCmd {
+			if copyCmd != "" {
+				dockerfile.WriteString(fmt.Sprintf("COPY %s\n", copyCmd))
+			}
+
+		}
+		// parseRunCommands(stageData.Run, &dockerfile)
+		// parseRunCommands(stageData.RunCmd, &dockerfile)
+		// parseRunCommands(stageData.RunCmd1, &dockerfile)
 		runCmdInstructions := make([]string, 0)
 		for _, runCmdInstruction := range stageData.RunCmd {
 			if runCmdInstruction != "" {
@@ -150,19 +153,16 @@ func GenerateDockerfile(yamlData []byte) (string, error) {
 			dockerfile.WriteString("\n")
 		}
 
-		if len(stageData.Entrypoint) > 0 {
-			dockerfile.WriteString(fmt.Sprintf("ENTRYPOINT [\"%s\"]\n", strings.Join(stageData.Entrypoint, "\",\"")))
-		}
-		if len(stageData.Cmd) > 0 {
-			dockerfile.WriteString(fmt.Sprintf("CMD [\"%s\"]\n", strings.Join(stageData.Cmd, "\",\"")))
-		}
-		if len(stageData.Add) > 0 {
-			dockerfile.WriteString(fmt.Sprintf("ADD %s\n", strings.Join(stageData.Add, " ")))
-		}
 		if len(stageData.Shell) > 0 {
 			dockerfile.WriteString(fmt.Sprintf("SHELL [\"%s\"]\n", strings.Join(stageData.Shell, "\",\"")))
 		}
 
+		if len(stageData.Cmd) > 0 {
+			dockerfile.WriteString(fmt.Sprintf("CMD [\"%s\"]\n", strings.Join(stageData.Cmd, "\",\"")))
+		}
+		if len(stageData.Entrypoint) > 0 {
+			dockerfile.WriteString(fmt.Sprintf("ENTRYPOINT [\"%s\"]\n", strings.Join(stageData.Entrypoint, "\",\"")))
+		}
 		dockerfile.WriteString("\n") // Add an empty line between stages
 	}
 

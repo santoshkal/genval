@@ -7,13 +7,13 @@ dockerfile:
   workdir: "$APP_HOME"
   copy:
   - "go.mod go.sum $APP_HOME/"
-  runCmd:
+  run:
   - apt-get update
   - apt-get clean
   - go mod download
-  copyCmd:
+  copy:
   - src/ $APP_HOME/src/
-  runCmd1:
+  run:
   - "CGO_ENABLED=0 go build -o myapp $APP_HOME/src/main.go"
 
 - stage: 1
