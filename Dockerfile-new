@@ -2,6 +2,7 @@
 FROM cgr.dev/chainguard/go:latest as build
 ENV APP_HOME=/app
 WORKDIR $APP_HOME
+ADD curl https://raw.githubusercontent.com/chainguard/chainguard/master/README.md $APP_HOME/README.md
 COPY src/ $APP_HOME/src/
 RUN CGO_ENABLED=0 go build -o myapp $APP_HOME/src/main.go
 

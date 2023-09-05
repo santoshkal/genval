@@ -66,7 +66,7 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 		return err
 	}
 
-	// fmt.Println("Commands:", jsonData)
+	// fmt.Println("Commands:", string(jsonData))
 	// policies := []string{"untrusted_base_image", "latest_base_image"}
 	// for _, policy := range policies {
 	// Create Rego for query and evaluation
@@ -88,18 +88,23 @@ func ValidateDockerfileUsingRego(dockerfileContent string, regoPolicyPath string
 		log.Fatal("Error evaluating query:", err)
 	}
 
-	var extractedKeys []string
+	// Iterate over the resultSet and print the result metadata
 	for _, result := range rs {
 		if len(result.Expressions) > 0 {
-			// Iterate over the result
-			for keys := range result.Expressions[0].Value.(map[string]interface{}) {
-				extractedKeys = append(extractedKeys, keys)
+			// Extract keys from the map
+			keys := result.Expressions[0].Value.(map[string]interface{})
+			for key, value := range keys {
+				if value != true {
+					fmt.Printf("Policy: %s failed\n", key)
+				} else {
+					fmt.Printf("Policy: %s passed\n", key)
+				}
 			}
-			for _, key := range extractedKeys {
-				fmt.Printf("Policy: %s passed\n", key)
-			}
+		} else {
+			fmt.Println("No policies passed")
 		}
 	}
+
 	// fmt.Printf("Extracted keys: %v\n", key)
 
 	// Get the number of policies evaluated by regoQuery

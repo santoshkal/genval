@@ -1,6 +1,14 @@
 package dockerfile_validation
 
 
+default untrusted_base_image = false
+default deny_root_user = false
+default deny_sudo = false
+default deny_caching = false
+default deny_add = false
+default deny_image_expansion = false
+
+
 
 untrusted_base_image{
     input[i].cmd == "from"
